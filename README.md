@@ -94,5 +94,3 @@ T: [+31 15 2152313](tel:+31152152313)
 E: [g.espinoza@un-ihe.org](mailto:gespinoza@utexas.edu)  
 I: [un-ihe.org](http://un-ihe.org) | [wateraccounting.org](http://wateraccounting.org) | [gespinoza.org](http://gespinoza.org)  
 
-## Citation
-> Espinoza-Dávalos, G.E., Bastiaanssen, W.G.M., Bett, B., and Cai, X. (2017). *A Python Implementation of the Harmonic ANalysis of Time Series (HANTS) Algorithm for Geospatial Data.* GitHub. https://github.com/gespinoza/hants
