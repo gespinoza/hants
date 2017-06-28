@@ -1,6 +1,6 @@
 # Harmonic ANalysis of Time Series (HANTS)
 
-This repository is a python implementation of the Harmonic ANalysis of Time Series (HANTS) applied to geographic data. The python module can be used to perform the HANTS analysis to a collection of time-variable raster data at each pixel.
+This repository is a python implementation of the Harmonic ANalysis of Time Series (HANTS) applied to geospatial data. The python module can be used to perform the HANTS analysis to a collection of time-variable raster data at each pixel.
 
  ![](example/plot.png)
 
@@ -9,7 +9,7 @@ There are two software options to run HANTS on python:
 - gdal
 - arcpy
 
-The two options are equivalent, the only difference is about the underlying library to process the geographic data.
+The two options are equivalent, the only difference is about the underlying library to process the geospatial data.
 
 ### <a name="gdal_example"></a>Example 1 - GDAL
 
