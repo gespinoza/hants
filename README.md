@@ -85,6 +85,9 @@ wa_arcpy.plot_point(nc_path, point, ylim)
 rasters_path_out = r'C:\example\output_rasters'
 wa_arcpy.export_tiffs(rasters_path_out, nc_path, name_format)
 ```
+## Citation
+> Espinoza-Dávalos, G. E., Bastiaanssen, W. G. M., Bett, B., & Cai, X. (2017). *A Python Implementation of the Harmonic ANalysis of Time Series (HANTS) Algorithm for Geospatial Data.* http://doi.org/10.5281/zenodo.820623
+
 ## Contact
 
 **Gonzalo E. Espinoza, PhD, MSc**  
