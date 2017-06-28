@@ -1,6 +1,7 @@
 # Harmonic ANalysis of Time Series (HANTS)
 
 This respository is a python implementation of the Harmonic ANalysis of Time Series (HANTS) applied to geographic data. The python module can be used to perform the HANTS analysis to a collection of time-variable raster data at each pixel.
+
  ![](example/plot.png)
 
 ## How to use the code
