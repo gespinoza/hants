@@ -89,7 +89,7 @@ wa_arcpy.export_tiffs(rasters_path_out, nc_path, name_format)
 
 **Gonzalo E. Espinoza, PhD, MSc**  
 Integrated Water Systems and Governance  
-IHE Delft
+IHE Delft Institute for Water Education  
 T: [+31 15 2152313](tel:+31152152313)  
 E: [g.espinoza@un-ihe.org](mailto:gespinoza@utexas.edu)  
 I: [un-ihe.org](http://un-ihe.org) | [wateraccounting.org](http://wateraccounting.org) | [gespinoza.org](http://gespinoza.org)  
