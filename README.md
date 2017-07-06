@@ -98,7 +98,7 @@ low = -1
 high = 1
 HiLo = 'Lo'
 fet = 0.05
-delta = 0.25
+delta = 0.1
 dod = 1
 
 # Run
@@ -136,7 +136,7 @@ low = -1
 high = 1
 HiLo = 'Lo'
 fet = 0.05
-delta = 0.25
+delta = 0.1
 dod = 1
 wa_arcpy.HANTS_netcdf(nc_path, nb, nf, HiLo, low, high, fet, dod, delta)
 
