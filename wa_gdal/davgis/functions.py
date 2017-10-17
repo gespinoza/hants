@@ -19,7 +19,10 @@ import pandas as pd
 import netCDF4
 import math
 import warnings
+import tempfile
 from scipy.interpolate import griddata
+
+np = pd.np
 
 
 def Buffer(input_shp, output_shp, distance):
@@ -137,90 +140,49 @@ def List_Fields(input_lyr):
 def Raster_to_Array(input_tiff, ll_corner, x_ncells, y_ncells,
                     values_type='float32'):
     # Input
-    give_warning = False
     inp_lyr = gdal.Open(input_tiff)
+    inp_srs = inp_lyr.GetProjection()
     inp_transform = inp_lyr.GetGeoTransform()
     inp_band = inp_lyr.GetRasterBand(1)
+    inp_data_type = inp_band.DataType
 
-    top_left_x = inp_transform[0]
     cellsize_x = inp_transform[1]
-    top_left_y = inp_transform[3]
+    rot_1 = inp_transform[2]
+    rot_2 = inp_transform[4]
     cellsize_y = inp_transform[5]
     NoData_value = inp_band.GetNoDataValue()
 
-    x_tot_n = inp_lyr.RasterXSize
-    y_tot_n = inp_lyr.RasterYSize
+    ll_x = ll_corner[0]
+    ll_y = ll_corner[1]
 
-    # Array
-    ll_x = ll_corner[0]  # max(ll_corner[0], top_left_x)
-    ll_y = ll_corner[1]  # min(ll_corner[1], top_left_y + cellsize_y*y_tot_n)
-    x_off = int(math.floor(
-                    (ll_x - top_left_x) / cellsize_x))
-    y_off = -int(math.ceil(
-                    (top_left_y - (ll_y - cellsize_y*y_ncells))/cellsize_y))
+    top_left_x = ll_x
+    top_left_y = ll_y - cellsize_y*y_ncells
 
-    d_type = pd.np.dtype(values_type)
+    # Change start point
+    temp_path = tempfile.mkdtemp()
+    temp_driver = gdal.GetDriverByName('GTiff')
+    temp_tiff = os.path.join(temp_path, os.path.basename(input_tiff))
+    temp_source = temp_driver.Create(temp_tiff, x_ncells, y_ncells,
+                                     1, inp_data_type)
+    temp_source.GetRasterBand(1).SetNoDataValue(NoData_value)
+    temp_source.SetGeoTransform((top_left_x, cellsize_x, rot_1,
+                                 top_left_y, rot_2, cellsize_y))
+    temp_source.SetProjection(inp_srs)
 
-    # Array parameters
-    if x_off < 0:
-        x1 = 0
-        if x_ncells + x_off < x_tot_n:
-            x2 = x_ncells + x_off
-        else:
-            x2 = x_tot_n
-    else:
-        x1 = x_off
-        if x_ncells + x_off < x_tot_n:
-            x2 = x_ncells
-        else:
-            x2 = x_tot_n - x_off
-    if y_off < 0:
-        y1 = 0
-        if y_ncells + y_off < y_tot_n:
-            y2 = y_ncells + y_off
-        else:
-            y2 = y_tot_n
-    else:
-        y1 = y_off
-        if y_ncells + y_off < y_tot_n:
-            y2 = y_ncells
-        else:
-            y2 = y_tot_n - y_off
+    # Snap
+    print temp_tiff
+    gdal.ReprojectImage(inp_lyr, temp_source, inp_srs, inp_srs,
+                        gdal.GRA_Bilinear)
+    temp_source = None
 
     # Read array
-    array = inp_lyr.ReadAsArray(x1, y1, x2, y2).astype(d_type)
+    d_type = pd.np.dtype(values_type)
+    out_lyr = gdal.Open(temp_tiff)
+    array = out_lyr.ReadAsArray(0, 0, out_lyr.RasterXSize,
+                                out_lyr.RasterYSize).astype(d_type)
     array[pd.np.isclose(array, NoData_value)] = pd.np.nan
+    out_lyr = None
 
-    # Add cols/rows if requesting an array larger than the extent of the raster
-    if x_off < 0:
-        nan_array = pd.np.empty((array.shape[0], -x_off))
-        nan_array[:] = pd.np.nan
-        array = pd.np.concatenate((nan_array, array), axis=1)
-        give_warning = True
-    if y_off < 0:
-        nan_array = pd.np.empty((-y_off, array.shape[1]))
-        nan_array[:] = pd.np.nan
-        array = pd.np.concatenate((nan_array, array), axis=0)
-        give_warning = True
-    if x_ncells + x_off > x_tot_n:
-        nan_array = pd.np.empty((array.shape[0], x_ncells + x_off - x_tot_n))
-        nan_array[:] = pd.np.nan
-        array = pd.np.concatenate((array, nan_array), axis=1)
-        give_warning = True
-    if y_ncells + y_off > y_tot_n:
-        nan_array = pd.np.empty((y_ncells + y_off - y_tot_n, array.shape[1]))
-        nan_array[:] = pd.np.nan
-        array = pd.np.concatenate((array, nan_array), axis=0)
-        give_warning = True
-
-    if give_warning:
-        warnings.warn('The requested array is larger than the extent of the'
-                      ' raster. The additional values are filled with NaNs')
-
-    # Save and/or close the data sources
-    inp_lyr = None
-
-    # Return
     return array
 
 
@@ -338,7 +300,7 @@ def Clip(input_tiff, output_tiff, bbox):
     # Bounding box
     xmin, ymin, xmax, ymax = bbox
 
-    # Get indices, number of cells, and top ;eft corner
+    # Get indices, number of cells, and top left corner
     x1 = max([0, int(math.floor((xmin - top_left_x)/cellsize_x))])
     x2 = min([x_tot_n, int(math.ceil((xmax - top_left_x)/cellsize_x))])
     y1 = max([0, int(math.floor((ymax - top_left_y)/cellsize_y))])
