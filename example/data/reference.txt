@@ -1,0 +1,4 @@
+Data source: Proba-V SYNTHESES S1 Top of Canopy 100 M
+Credit: VITO/ESA
+Link: http://www.vito-eodata.be/PDF/portal/Application.html#Browse;Root=15007522;Collection=1000124;Time=NORMAL,NORMAL,15,OCTOBER,2013,31,DECEMBER,2018;isReserved=false
+Note: The ProbaV NDVI data were downloaded in GeoTIFF format. 
