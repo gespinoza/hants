@@ -12,20 +12,25 @@ GIS workflows used in water resources.
 
 from __future__ import division
 import os
+import math
+import tempfile
+import warnings
 import ogr
 import osr
 import gdal
 import pandas as pd
 import netCDF4
-import math
-import warnings
-import tempfile
 from scipy.interpolate import griddata
+import rpy2.robjects as robjects
+from rpy2.robjects import pandas2ri
 
 np = pd.np
 
 
 def Buffer(input_shp, output_shp, distance):
+    """
+    Creates a buffer of the input shapefile by a given distance
+    """
 
     # Input
     inp_driver = ogr.GetDriverByName('ESRI Shapefile')
@@ -73,6 +78,9 @@ def Buffer(input_shp, output_shp, distance):
 
 def Feature_to_Raster(input_shp, output_tiff,
                       cellsize, field_name=False, NoData_value=-9999):
+    """
+    Converts a shapefile into a raster
+    """
 
     # Input
     inp_driver = ogr.GetDriverByName('ESRI Shapefile')
@@ -113,13 +121,16 @@ def Feature_to_Raster(input_shp, output_tiff,
 
 
 def List_Fields(input_lyr):
+    """
+    Lists the field names of input layer
+    """
     # Input
-    if type(input_lyr) == str:
+    if isinstance(input_lyr, str):
         inp_driver = ogr.GetDriverByName('ESRI Shapefile')
         inp_source = inp_driver.Open(input_lyr, 0)
         inp_lyr = inp_source.GetLayer()
         inp_lyr_defn = inp_lyr.GetLayerDefn()
-    elif type(input_lyr) == ogr.Layer:
+    elif isinstance(input_lyr, ogr.Layer):
         inp_lyr_defn = input_lyr.GetLayerDefn()
 
     # List
@@ -139,6 +150,9 @@ def List_Fields(input_lyr):
 
 def Raster_to_Array(input_tiff, ll_corner, x_ncells, y_ncells,
                     values_type='float32'):
+    """
+    Loads a raster into a numpy array
+    """
     # Input
     inp_lyr = gdal.Open(input_tiff)
     inp_srs = inp_lyr.GetProjection()
@@ -170,7 +184,6 @@ def Raster_to_Array(input_tiff, ll_corner, x_ncells, y_ncells,
     temp_source.SetProjection(inp_srs)
 
     # Snap
-    print temp_tiff
     gdal.ReprojectImage(inp_lyr, temp_source, inp_srs, inp_srs,
                         gdal.GRA_Bilinear)
     temp_source = None
@@ -188,6 +201,9 @@ def Raster_to_Array(input_tiff, ll_corner, x_ncells, y_ncells,
 
 def Resample(input_tiff, output_tiff, cellsize, method=None,
              NoData_value=-9999):
+    """
+    Resamples a raster to a different spatial resolution
+    """
     # Input
     inp_lyr = gdal.Open(input_tiff)
     inp_srs = inp_lyr.GetProjection()
@@ -248,14 +264,17 @@ def Resample(input_tiff, output_tiff, cellsize, method=None,
     return output_tiff
 
 
-def Array_to_Raster(array, output_tiff, ll_corner, cellsize,
+def Array_to_Raster(input_array, output_tiff, ll_corner, cellsize,
                     srs_wkt):
+    """
+    Saves an array into a raster file
+    """
     # Output
     out_driver = gdal.GetDriverByName('GTiff')
     if os.path.exists(output_tiff):
         out_driver.Delete(output_tiff)
-    y_ncells, x_ncells = array.shape
-    gdal_datatype = gdaltype_from_dtype(array.dtype)
+    y_ncells, x_ncells = input_array.shape
+    gdal_datatype = gdaltype_from_dtype(input_array.dtype)
 
     out_source = out_driver.Create(output_tiff, x_ncells, y_ncells,
                                    1, gdal_datatype)
@@ -268,7 +287,7 @@ def Array_to_Raster(array, output_tiff, ll_corner, cellsize,
     out_source.SetGeoTransform((out_top_left_x, cellsize, 0,
                                 out_top_left_y, 0, -cellsize))
     out_source.SetProjection(str(srs_wkt))
-    out_band.WriteArray(array)
+    out_band.WriteArray(input_array)
 
     # Save and/or close the data sources
     out_source = None
@@ -278,6 +297,9 @@ def Array_to_Raster(array, output_tiff, ll_corner, cellsize,
 
 
 def Clip(input_tiff, output_tiff, bbox):
+    """
+    Clips a raster given a bounding box
+    """
     # Input
     inp_lyr = gdal.Open(input_tiff)
     inp_srs = inp_lyr.GetProjection()
@@ -335,6 +357,9 @@ def Clip(input_tiff, output_tiff, bbox):
 
 
 def Raster_to_Points(input_tiff, output_shp):
+    """
+    Converts a raster to a point shapefile
+    """
     # Input
     inp_lyr = gdal.Open(input_tiff)
     inp_srs = inp_lyr.GetProjection()
@@ -398,7 +423,8 @@ def Raster_to_Points(input_tiff, output_shp):
 
 
 def Add_Field(input_lyr, field_name, ogr_field_type):
-    '''
+    """
+    Add a field to a layer using the following ogr field types:
     0 = ogr.OFTInteger
     1 = ogr.OFTIntegerList
     2 = ogr.OFTReal
@@ -411,7 +437,7 @@ def Add_Field(input_lyr, field_name, ogr_field_type):
     9 = ogr.OFTDate
     10 = ogr.OFTTime
     11 = ogr.OFTDateTime
-    '''
+    """
 
     # List fields
     fields_ls = List_Fields(input_lyr)
@@ -428,6 +454,9 @@ def Add_Field(input_lyr, field_name, ogr_field_type):
 
 
 def Spatial_Reference(epsg, return_string=True):
+    """
+    Obtain a spatial reference from the EPSG parameter
+    """
     srs = osr.SpatialReference()
     srs.ImportFromEPSG(epsg)
     if return_string:
@@ -437,6 +466,9 @@ def Spatial_Reference(epsg, return_string=True):
 
 
 def List_Datasets(path, ext):
+    """
+    List the data sets in a folder
+    """
     datsets_ls = []
     for f in os.listdir(path):
         if os.path.splitext(f)[1][1:] == ext:
@@ -447,6 +479,12 @@ def List_Datasets(path, ext):
 def NetCDF_to_Raster(input_nc, output_tiff, ras_variable,
                      x_variable='longitude', y_variable='latitude',
                      crs={'variable': 'crs', 'wkt': 'crs_wkt'}, time=None):
+    """
+    Extract a layer from a netCDF file and save it as a raster file.
+
+    For temporal netcdf files, use the 'time' parameter as:
+    t = {'variable': 'time_variable', 'value': '30/06/2017'}
+    """
     # Input
     inp_nc = netCDF4.Dataset(input_nc, 'r')
     inp_values = inp_nc.variables[ras_variable]
@@ -527,6 +565,10 @@ def NetCDF_to_Raster(input_nc, output_tiff, ras_variable,
 
 
 def Apply_Filter(input_tiff, output_tiff, number_of_passes):
+    """
+    Smooth a raster by replacing cell value by the average value of the
+    surrounding cells
+    """
     # Input
     inp_lyr = gdal.Open(input_tiff)
     inp_srs = inp_lyr.GetProjection()
@@ -572,6 +614,9 @@ def Apply_Filter(input_tiff, output_tiff, number_of_passes):
 
 
 def Extract_Band(input_tiff, output_tiff, band_number=1):
+    """
+    Extract and save a raster band into a new raster
+    """
     # Input
     inp_lyr = gdal.Open(input_tiff)
     inp_srs = inp_lyr.GetProjection()
@@ -605,10 +650,38 @@ def Extract_Band(input_tiff, output_tiff, band_number=1):
     return output_tiff
 
 
-def Interpolation(input_shp, field_name, output_tiff,
-                  method='nearest', cellsize=None):
+def Get_Extent(input_lyr):
+    """
+    Obtain the input layer extent (xmin, ymin, xmax, ymax)
+    """
+    # Input
+    filename, ext = os.path.splitext(input_lyr)
+    if ext.lower() == '.shp':
+        inp_driver = ogr.GetDriverByName('ESRI Shapefile')
+        inp_source = inp_driver.Open(input_lyr)
+        inp_lyr = inp_source.GetLayer()
+        x_min, x_max, y_min, y_max = inp_lyr.GetExtent()
+        inp_lyr = None
+        inp_source = None
+    elif ext.lower() == '.tif':
+        inp_lyr = gdal.Open(input_lyr)
+        inp_transform = inp_lyr.GetGeoTransform()
+        x_min = inp_transform[0]
+        x_max = x_min + inp_transform[1] * inp_lyr.RasterXSize
+        y_max = inp_transform[3]
+        y_min = y_max + inp_transform[5] * inp_lyr.RasterYSize
+        inp_lyr = None
+    else:
+        raise Exception('The input data type is not recognized')
+    return (x_min, y_min, x_max, y_max)
+
+
+def Interpolation_Default(input_shp, field_name, output_tiff,
+                          method='nearest', cellsize=None):
     '''
-    method = ('nearest', 'linear', 'cubic')
+    Interpolate point data into a raster
+
+    Available methods: 'nearest', 'linear', 'cubic'
     '''
     # Input
     inp_driver = ogr.GetDriverByName('ESRI Shapefile')
@@ -650,29 +723,134 @@ def Interpolation(input_shp, field_name, output_tiff,
                                          y_ncells))
 
     # Interpolate
-    array_out = griddata((x, y), z, (X, Y), method=method)
-    array_out = pd.np.flipud(array_out)
+    out_array = griddata((x, y), z, (X, Y), method=method)
+    out_array = pd.np.flipud(out_array)
 
     # Save raster
-    Array_to_Raster(array_out, output_tiff, ll_corner, cellsize, inp_wkt)
+    Array_to_Raster(out_array, output_tiff, ll_corner, cellsize, inp_wkt)
 
     # Return
     return output_tiff
 
 
+def Kriging_Interpolation_Points(input_shp, field_name, output_tiff, cellsize,
+                                 bbox=None):
+    """
+    Interpolate point data using Ordinary Kriging
+
+    Reference: https://cran.r-project.org/web/packages/automap/automap.pdf
+    """
+    # Spatial reference
+    inp_driver = ogr.GetDriverByName('ESRI Shapefile')
+    inp_source = inp_driver.Open(input_shp, 0)
+    inp_lyr = inp_source.GetLayer()
+    inp_srs = inp_lyr.GetSpatialRef()
+    srs_wkt = inp_srs.ExportToWkt()
+    inp_source = None
+    # Temp folder
+    temp_dir = tempfile.mkdtemp()
+    temp_points_tiff = os.path.join(temp_dir, 'points_ras.tif')
+    # Points to raster
+    Feature_to_Raster(input_shp, temp_points_tiff,
+                      cellsize, field_name, -9999)
+    # Raster extent
+    if bbox:
+        xmin, ymin, xmax, ymax = bbox
+        ll_corner = [xmin, ymin]
+        x_ncells = int(math.ceil((xmax - xmin)/cellsize))
+        y_ncells = int(math.ceil((ymax - ymin)/cellsize))
+    else:
+        temp_lyr = gdal.Open(temp_points_tiff)
+        x_min, x_max, y_min, y_max = temp_lyr.GetExtent()
+        ll_corner = [x_min, y_min]
+        x_ncells = temp_lyr.RasterXSize
+        y_ncells = temp_lyr.RasterYSize
+        temp_lyr = None
+    # Raster to array
+    points_array = Raster_to_Array(temp_points_tiff, ll_corner,
+                                   x_ncells, y_ncells, values_type='float32')
+    # Run kriging
+    x_vector = np.arange(xmin + cellsize/2, xmax + cellsize/2, cellsize)
+    y_vector = np.arange(ymin + cellsize/2, ymax + cellsize/2, cellsize)
+    out_array = Kriging_Interpolation_Array(points_array, x_vector, y_vector)
+    # Save array as raster
+    Array_to_Raster(out_array, output_tiff, ll_corner, cellsize, srs_wkt)
+    # Return
+    return output_tiff
+
+
+def Kriging_Interpolation_Array(input_array, x_vector, y_vector):
+    """
+    Interpolate data in an array using Ordinary Kriging
+
+    Reference: https://cran.r-project.org/web/packages/automap/automap.pdf
+    """
+    # Total values in array
+    n_values = np.isfinite(input_array).sum()
+    # Load function
+    pandas2ri.activate()
+    robjects.r('''
+                library(gstat)
+                library(sp)
+                library(automap)
+                kriging_interpolation <- function(x_vec, y_vec, values_arr,
+                                                  n_values){
+                  # Parameters
+                  shape <- dim(values_arr)
+                  counter <- 1
+                  df <- data.frame(X=numeric(n_values),
+                                   Y=numeric(n_values),
+                                   INFZ=numeric(n_values))
+                  # Save values into a data frame
+                  for (i in seq(shape[2])) {
+                    for (j in seq(shape[1])) {
+                      if (is.finite(values_arr[j, i])) {
+                        df[counter,] <- c(x_vec[i], y_vec[j], values_arr[j, i])
+                        counter <- counter + 1
+                      }
+                    }
+                  }
+                  # Grid
+                  coordinates(df) = ~X+Y
+                  int_grid <- expand.grid(x_vec, y_vec)
+                  names(int_grid) <- c("X", "Y")
+                  coordinates(int_grid) = ~X+Y
+                  gridded(int_grid) = TRUE
+                  # Kriging
+                  krig_output <- autoKrige(INFZ~1, df, int_grid)
+                  # Array
+                  values_out <- matrix(krig_output$krige_output$var1.pred,
+                                       nrow=length(y_vec),
+                                       ncol=length(x_vec),
+                                       byrow = TRUE)
+                  return(values_out)
+                }
+                ''')
+    kriging_interpolation = robjects.r['kriging_interpolation']
+    # Execute kriging function and get array
+    r_array = kriging_interpolation(x_vector, y_vector, input_array, n_values)
+    array_out = np.array(r_array)
+    # Return
+    return array_out
+
+
 def get_neighbors(x, y, nx, ny, cells=1):
+    """
+    Get a list of neighboring cells
+    """
     neighbors_ls = [(xi, yi)
                     for xi in range(x - 1 - cells + 1, x + 2 + cells - 1)
                     for yi in range(y - 1 - cells + 1, y + 2 + cells - 1)
                     if (-1 < x <= nx - 1 and -1 < y <= ny - 1 and
                         (x != xi or y != yi) and
-                        (0 <= xi <= nx - 1) and (0 <= yi <= ny - 1)
-                        )
-                    ]
+                        (0 <= xi <= nx - 1) and (0 <= yi <= ny - 1))]
     return neighbors_ls
 
 
 def get_mean_neighbors(array, index, include_cell=False):
+    """
+    Get the mean value of neighboring cells
+    """
     xi, yi = index
     nx, ny = array.shape
     stay = True
@@ -691,6 +869,10 @@ def get_mean_neighbors(array, index, include_cell=False):
 
 
 def array_filter(array, number_of_passes=1):
+    """
+    Smooth cell values by replacing each cell value by the average value of the
+    surrounding cells
+    """
     while number_of_passes >= 1:
         ny, nx = array.shape
         arrayf = pd.np.empty(array.shape)
@@ -704,6 +886,9 @@ def array_filter(array, number_of_passes=1):
 
 
 def ogrtype_from_dtype(d_type):
+    """
+    Return the ogr data type from the numpy dtype
+    """
     # ogr field type
     if 'float' in d_type.name:
         ogr_data_type = 2
@@ -719,6 +904,9 @@ def ogrtype_from_dtype(d_type):
 
 
 def gdaltype_from_dtype(d_type):
+    """
+    Return the gdal data type from the numpy dtype
+    """
     # gdal field type
     if 'int8' == d_type.name:
         gdal_data_type = 1
