@@ -78,7 +78,7 @@ The two options are equivalent, the only difference is about the underlying libr
 #### <a name="gdal_example"></a>Example 1 - Run everything together
 
 ```python
-from hants import wa_gdal
+from hants.wa_gdal import *  # from hants.wa_arcpy import *
 
 # Data parameters
 rasters_path = r'C:\example\data'
@@ -102,21 +102,21 @@ delta = 0.1
 dod = 1
 
 # Run
-wa_gdal.run_HANTS(rasters_path, name_format,
-                  start_date, end_date, latlim, lonlim, cellsize, nc_path,
-                  nb, nf, HiLo, low, high, fet, dod, delta,
-                  4326, -9999.0, rasters_path_out)
+run_HANTS(rasters_path, name_format,
+          start_date, end_date, latlim, lonlim, cellsize, nc_path,
+          nb, nf, HiLo, low, high, fet, dod, delta,
+          4326, -9999.0, rasters_path_out)
 
 # Check fit
 point = [108.87, 11.47]
 ylim = [-1, 1]
-wa_gdal.plot_point(nc_path, point, ylim)
+plot_point(nc_path, point, ylim)
 ```
 
-#### <a name="gdal_example"></a>Example 2 - Run by parts
+#### <a name="gdal_example"></a>Example 2 - Run processes separately
 
 ```python
-from hants import wa_arcpy
+from hants.wa_arcpy import *  # from hants.wa_gdal import *
 
 # Create netcdf file
 rasters_path = r'C:\example\data'
@@ -127,8 +127,8 @@ latlim = [11.4505, 11.4753]
 lonlim = [108.8605, 108.8902]
 cellsize = 0.00099162627
 nc_path = r'C:\example\ndvi_probav.nc'
-wa_arcpy.create_netcdf(rasters_path, name_format, start_date, end_date,
-                       latlim, lonlim, cellsize, nc_path)
+create_netcdf(rasters_path, name_format, start_date, end_date,
+              latlim, lonlim, cellsize, nc_path)
 
 # Run HANTS for a single point
 nb = 365
@@ -141,20 +141,20 @@ delta = 0.1
 dod = 1
 
 point = [108.87, 11.47]
-df = wa_arcpy.HANTS_singlepoint(nc_path, point, nb, nf, HiLo, low, high, fet,
-                                dod, delta)
+df = HANTS_singlepoint(nc_path, point, nb, nf, HiLo, low, high, fet,
+                       dod, delta)
 print df
 
 # Run HANTS
-wa_arcpy.HANTS_netcdf(nc_path, nb, nf, HiLo, low, high, fet, dod, delta)
+HANTS_netcdf(nc_path, nb, nf, HiLo, low, high, fet, dod, delta)
 
 # Check fit
 ylim = [-1, 1]
-wa_arcpy.plot_point(nc_path, point, ylim)
+plot_point(nc_path, point, ylim)
 
 # Export rasters
 rasters_path_out = r'C:\example\output_rasters'
-wa_arcpy.export_tiffs(rasters_path_out, nc_path, name_format)
+export_tiffs(rasters_path_out, nc_path, name_format)
 ```
 ## Citation
 > Espinoza-Dávalos, G. E., Bastiaanssen, W. G. M., Bett, B., & Cai, X. (2017). *A Python Implementation of the Harmonic ANalysis of Time Series (HANTS) Algorithm for Geospatial Data.* http://doi.org/10.5281/zenodo.820623
