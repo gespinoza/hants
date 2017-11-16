@@ -75,7 +75,7 @@ The two options are equivalent, the only difference is about the underlying libr
 
 ### Examples
 
-#### <a name="gdal_example"></a>Example 1 - GDAL
+#### <a name="gdal_example"></a>Example 1 - Run everything together
 
 ```python
 from hants import wa_gdal
@@ -113,7 +113,7 @@ ylim = [-1, 1]
 wa_gdal.plot_point(nc_path, point, ylim)
 ```
 
-#### <a name="gdal_example"></a>Example 2 - arcpy
+#### <a name="gdal_example"></a>Example 2 - Run by parts
 
 ```python
 from hants import wa_arcpy
@@ -129,7 +129,8 @@ cellsize = 0.00099162627
 nc_path = r'C:\example\ndvi_probav.nc'
 wa_arcpy.create_netcdf(rasters_path, name_format, start_date, end_date,
                        latlim, lonlim, cellsize, nc_path)
-# Run HANTS
+
+# Run HANTS for a single point
 nb = 365
 nf = 3
 low = -1
@@ -138,10 +139,16 @@ HiLo = 'Lo'
 fet = 0.05
 delta = 0.1
 dod = 1
+
+point = [108.87, 11.47]
+df = wa_arcpy.HANTS_singlepoint(nc_path, point, nb, nf, HiLo, low, high, fet,
+                                dod, delta)
+print df
+
+# Run HANTS
 wa_arcpy.HANTS_netcdf(nc_path, nb, nf, HiLo, low, high, fet, dod, delta)
 
 # Check fit
-point = [108.87, 11.47]
 ylim = [-1, 1]
 wa_arcpy.plot_point(nc_path, point, ylim)
 
