@@ -54,6 +54,7 @@ The two options are equivalent, the only difference is about the underlying libr
          'HANTS_netcdf',
          'HANTS',
          'export_tiffs',
+         'HANTS_singlepoint',
          'plot_point']
         ```
     - arcpy
@@ -65,6 +66,7 @@ The two options are equivalent, the only difference is about the underlying libr
          'HANTS_netcdf',
          'HANTS',
          'export_tiffs',
+         'HANTS_singlepoint',
          'plot_point']
         ```
     **Note:** If you get the following error:
