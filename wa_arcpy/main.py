@@ -225,6 +225,96 @@ def HANTS_netcdf(nc_path, nb, nf, HiLo, low, high, fet, dod, delta,
     nc_file.close()
 
 
+def HANTS_singlepoint(nc_path, point, nb, nf, HiLo, low, high, fet, dod,
+                      delta, fill_val=-9999.0):
+    '''
+    This function runs the python implementation of the HANTS algorithm for a
+    single point (lat, lon). It plots the fit and returns a data frame with
+    the 'original' and the 'hants' time series.
+    '''
+    # Location
+    lonx = point[0]
+    latx = point[1]
+
+    nc_file = netCDF4.Dataset(nc_path, 'r')
+
+    time = [pd.to_datetime(i, format='%Y%m%d')
+            for i in nc_file.variables['time'][:]]
+
+    lat = nc_file.variables['latitude'][:]
+    lon = nc_file.variables['longitude'][:]
+
+    # Check that the point falls within the extent of the netcdf file
+    lon_max = max(lon)
+    lon_min = min(lon)
+    lat_max = max(lat)
+    lat_min = min(lat)
+    if not (lon_min < lonx < lon_max) or not (lat_min < latx < lat_max):
+        warnings.warn('The point lies outside the extent of the netcd file. '
+                      'The closest cell is plotted.')
+        if lonx > lon_max:
+            lonx = lon_max
+        elif lonx < lon_min:
+            lonx = lon_min
+        if latx > lat_max:
+            latx = lat_max
+        elif latx < lat_min:
+            latx = lat_min
+
+    # Get lat-lon index in the netcdf file
+    lat_closest = lat.flat[pd.np.abs(lat - latx).argmin()]
+    lon_closest = lon.flat[pd.np.abs(lon - lonx).argmin()]
+
+    lat_i = pd.np.where(lat == lat_closest)[0][0]
+    lon_i = pd.np.where(lon == lon_closest)[0][0]
+
+    # Read values
+    original_values = nc_file.variables['original_values'][lat_i, lon_i, :]
+
+    # Additional parameters
+    ni = len(time)
+    ts = range(ni)
+
+    # HANTS
+    y = pd.np.array(original_values)
+
+    y[pd.np.isnan(y)] = fill_val
+
+    [hants_values, outliers] = HANTS(ni, nb, nf, y, ts, HiLo, low, high, fet,
+                                     dod, delta, fill_val)
+    # Plot
+    top = 1.15*max(pd.np.nanmax(original_values),
+                   pd.np.nanmax(hants_values))
+    bottom = 1.15*min(pd.np.nanmin(original_values),
+                      pd.np.nanmin(hants_values))
+    ylim = [bottom, top]
+
+    plt.plot(time, hants_values, 'r-', label='HANTS')
+    plt.plot(time, original_values, 'b.', label='Original data')
+
+    plt.ylim(ylim[0], ylim[1])
+    plt.legend(loc=4)
+    plt.xlabel('time')
+    plt.ylabel('values')
+    plt.gcf().autofmt_xdate()
+    plt.axes().set_title('Point: lon {0:.2f}, lat {1:.2f}'.format(lon_closest,
+                                                                  lat_closest))
+    plt.axes().set_aspect(0.5*(time[-1] - time[0]).days/(ylim[1] - ylim[0]))
+
+    plt.show()
+
+    # Close netcdf file
+    nc_file.close()
+
+    # Data frame
+    df = pd.DataFrame({'time': time,
+                       'original': original_values,
+                       'hants': hants_values})
+
+    # Return
+    return df
+
+
 def HANTS(ni, nb, nf, y, ts, HiLo, low, high, fet, dod, delta, fill_val):
     '''
     This function applies the Harmonic ANalysis of Time Series (HANTS)
@@ -420,8 +510,10 @@ def plot_point(nc_path, point, ylim=None):
     values_h = nc_file.variables['hants_values'][lat_i, lon_i, :]
 
     if not ylim:
-        top = 1.15*max(pd.np.nanmax(values_o), pd.np.nanmax(values_h))
-        bottom = 1.15*min(pd.np.nanmin(values_o), pd.np.nanmin(values_h))
+        top = 1.15*max(pd.np.nanmax(values_o),
+                       pd.np.nanmax(values_h))
+        bottom = 1.15*min(pd.np.nanmin(values_o),
+                          pd.np.nanmin(values_h))
         ylim = [bottom, top]
 
     # Plot
