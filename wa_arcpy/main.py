@@ -183,6 +183,8 @@ def HANTS_netcdf(nc_path, nb, nf, HiLo, low, high, fet, dod, delta,
 
     time_var = nc_file.variables['time'][:]
     original_values = nc_file.variables['original_values'][:]
+    lat_values = nc_file.variables['latitude'][:]
+    lon_values = nc_file.variables['longitude'][:]
 
     [rows, cols, ztime] = original_values.shape
     size_st = cols*rows
@@ -202,11 +204,13 @@ def HANTS_netcdf(nc_path, nb, nf, HiLo, low, high, fet, dod, delta,
     print 'Running HANTS...'
     for m in range(rows):
         for n in range(cols):
-            print '\t{0}/{1}'.format(counter, size_st)
+            print '\t{0}/{1}\tlat: {2}\tlon: {3}'.format(counter, size_st,
+                                                         lat_values[m],
+                                                         lon_values[n])
 
             y = pd.np.array(original_values[m, n, :])
 
-            y[pd.np.isnan(y)] = fill_val
+            y[~pd.np.isfinite(y)] = fill_val
 
             [yr, outliers] = HANTS(ni, nb, nf, y, ts, HiLo,
                                    low, high, fet, dod, delta, fill_val)
@@ -278,7 +282,7 @@ def HANTS_singlepoint(nc_path, point, nb, nf, HiLo, low, high, fet, dod,
     # HANTS
     y = pd.np.array(original_values)
 
-    y[pd.np.isnan(y)] = fill_val
+    y[~pd.np.isfinite(y)] = fill_val
 
     [hants_values, outliers] = HANTS(ni, nb, nf, y, ts, HiLo, low, high, fet,
                                      dod, delta, fill_val)
